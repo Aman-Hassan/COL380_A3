@@ -33,3 +33,5 @@
 
 # workspace file
 *.workspace
+.vscode/
+submission/
