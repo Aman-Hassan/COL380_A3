@@ -1,6 +1,7 @@
 #include <mpi.h>
 #include <stdio.h>
 #include <string.h>
+#include <random>
 
 #include "mazegenerator.hpp"
 
@@ -8,8 +9,8 @@
 ^ - According to assignment instructions, we have to assign each cell in 64x64 maze as either "wall" cell or "non-wall" cell
 ^ - Generated maze should be perfect maze
 
-* - Instead of the typical Adjacency List/Adjaceny Matrix representations we just add nodes as char (from which there are macros for getting row/col and its neighbours)
-* - We can store the edges as a 8-bit char, where each bit represents whether the node is connected to the left, right, up, down neighbors and other necessary info like visited, etc.
+* - Instead of the typical Adjacency List/Adjaceny Matrix representations we just add nodes as short (from which there are macros for getting row/col and its neighbours)
+* - We can store the edges as a 8-bit short, where each bit represents whether the node is connected to the left, right, up, down neighbors and other necessary info like visited, etc.
 
 Main Idea:
 * - Intial graph of 32x32 nodes where all neighbours are connected ( should we prbly give weights?)
@@ -34,17 +35,26 @@ So basically we'll
 */
 
 //! Possibly need to include weights -> would have to change macro's and the way we store edges
-char* init_graph(int size){
-    char* edges = (char*)malloc(size * size * sizeof(char));
-    //! Initialization possibly wrong - This is also giving all the corner/edge vertices as fully connected (even though they have some neighbours)
+short* init_graph(int size){
+    // create random weight for node
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, 255); // since we have 8 bits for weight
+    short* edges = (short*)malloc(size * size * sizeof(short));
     for (int i = 0; i < size * size; i++){
-        edges[i] = 0x00; // No flags are set, (But while doing bfs/kruskal we'll assume fully connected i.e. we wont be using the GET_LEFT, GET_RIGHT, etc. macros)
+        edges[i] = 0x00; // Nothing is set, (But while doing bfs/kruskal we'll assume fully connected i.e. we wont be using the GET_LEFT, GET_RIGHT, etc. macros)
+        SET_NODE_WEIGHT(edges[i], dis(gen)); // Set the weight of the node
     }
     return edges;
 }
 
-char* init_maze(int size){
-    char* maze = (char*)malloc(size * size * sizeof(char));
+// Initialize the maze with all walls
+short* init_maze(int size){
+    // create random weight for node
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, 255); // since we have 8 bits for weight
+    short* maze = (short*)malloc(size * size * sizeof(short));
     for (int i = 0; i < size * size; i++){
         maze[i] = 0x00; // All walls (i.e. no connections at all)
     }
@@ -53,7 +63,7 @@ char* init_maze(int size){
 }
 
 
-void expand_edges_to_maze(int size, char* edges, char* maze){
+void expand_edges_to_maze(int size, short* edges, short* maze){
     // Now we need to convert the edges to the maze
     // Every (i, j) in the edges should be converted to (2*i, 2*j) in the maze and should be made as C
     // if there is a connection between say (i, j) and (i, j+1) then (2*i, 2*j+1) should be made as C 
@@ -116,11 +126,21 @@ void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm
     MPI_Comm_rank(comm, &rank);
 
     int graph_size = (size + 1) / 2; // The size of the graph (i.e. the number of nodes in the graph)
-    char* edges = init_graph(graph_size); // Generates the initial graph with all neighbours connected (shrinked graph) -> size + 1 for odd sizes
+    //! Cannot do the below now because of the random generation of weights -> This would cause each process to have different weights for the same nodes
+    // short* edges = init_graph(graph_size); // Generates the initial graph with all neighbours connected (shrinked graph) -> size + 1 for odd sizes
+    short* edges = (short*)malloc(graph_size * graph_size * sizeof(short));
+
+    // broadcast one initialized graph from rank 0 to all other processes
+    if (rank == 0){
+        edges = init_graph(graph_size);
+    }
+
+    MPI_Bcast(edges, graph_size * graph_size, MPI_SHORT, 0, comm);
+
     if (strcmp(solving_algorithm, "bfs") == 0){
         generateTreeUsingBFS(graph_size, edges, comm);
     } else if (strcmp(solving_algorithm, "kruskal") == 0){
-        // generateTreeUsingKruskal(size, edges, comm);
+        generateTreeUsingKruskal(graph_size, edges, comm);
     }
     else {
         printf("Invalid solving algorithm\n");
@@ -130,12 +150,8 @@ void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm
     // Now we need to convert this to a 64x64 maze
     // We can do this by initializing a 64x64 maze with all walls
     if (rank == 0){
-        char* maze = init_maze(size);
+        short* maze = init_maze(size);
         // print_edges(edges, (size + 1) / 2); // For debugging purposes
-        /*
-        ! Upon printing edges it seems that the bits are not set correctly and hence error in the maze
-        ! Need to check bfs and do the necessary changes
-        */
         expand_edges_to_maze(size, edges, maze);
         // printing the final obtained maze
         print_maze_complete(maze, size);

@@ -1,3 +1,3 @@
 #include <mpi.h>
 #include "defs.hpp"
-void generateTreeUsingKruskal(int size, char *maze, MPI_Comm comm);
+void generateTreeUsingKruskal(int size, short *maze, MPI_Comm comm);

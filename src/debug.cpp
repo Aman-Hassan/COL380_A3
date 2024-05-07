@@ -19,11 +19,11 @@
 // ╵ -  Box drawings light up
 // ╷ -  Box drawings light down
 // · - center dot
-void print_maze_visual(char* edges, int size){
+void print_maze_visual(short* edges, int size){
     // printf("Printing maze\n");
     for (int i = 0; i < size; i++){
         for (int j = 0; j < size; j++){
-            char edge = edges[i * size + j];
+            short edge = edges[i * size + j];
             if (GET_LEFT(edge) == LEFT && GET_RIGHT(edge) == RIGHT && GET_UP(edge) == UP && GET_DOWN(edge) == DOWN){
                 printf("┼");
             } else if (GET_LEFT(edge) == LEFT && GET_RIGHT(edge) == RIGHT && GET_UP(edge) == UP){
@@ -63,11 +63,11 @@ void print_maze_visual(char* edges, int size){
 
 }
 
-void print_maze_complete(char* edges, int size) {
+void print_maze_complete(short* edges, int size) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             int node = NODE(i, j, size);
-            char edge = edges[node];
+            short edge = edges[node];
 
             if (IS_C(edge) != 0x20) {
                 printf("█"); // Print a character to represent an opaque block
@@ -121,12 +121,12 @@ void print_maze_complete(char* edges, int size) {
     }
 }
 
-void print_maze(char* maze, int size){
+void print_maze(short* maze, int size){
     // printf("Printing maze\n");
     for (int i = 0; i < size; i++){
         for (int j = 0; j < size; j++){
             // printf("%c", maze[i * size + j] == 0x00 ? 'W' : 'C');
-            char node = maze[i * size + j];
+            short node = maze[i * size + j];
             if (IS_C(node) == 0x20){
                 printf("□");
 
@@ -154,7 +154,7 @@ void print_maze(char* maze, int size){
     }
 }
 
-void print_edges(char* edges, int size){
+void print_edges(short* edges, int size){
     // printf("Printing edges\n");
     for (int i = 0; i < size; i++){
         for (int j = 0; j < size; j++){
@@ -165,7 +165,7 @@ void print_edges(char* edges, int size){
     }
 }
 
-void print_visited(char* edges, int size){
+void print_visited(short* edges, int size){
     // printf("Printing visited\n");
     for (int i = 0; i < size; i++){
         for (int j = 0; j < size; j++){

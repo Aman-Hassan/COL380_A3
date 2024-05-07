@@ -14,14 +14,14 @@
 // - We make macros to access row no. and col no., neighbors, etc.
 // - make sure that the neighbors macros give valid output, i.e. they don't go out of bounds
 // - Also need a check whether a node is valid or not
-// - We can store edges as 64x64 1d array of char (8bit) where last 4 bits value representing whether node is connected to left/right/down/up neighbors
+// - We can store edges as 64x64 1d array of short (8bit) where last 4 bits value representing whether node is connected to left/right/down/up neighbors
 // | 0 | 0 | 0 | visited | left | right | up | down | -> 8 bits
 
 
 // Function to generate a maze using BFS and MPI
 // @param size: The size of the maze
-// @param maze: The array of nodes of the maze, each char is | 0 | 0 | selected | visited | left | right | up | down |
-void generateTreeUsingBFS(int size, char *maze, MPI_Comm comm){
+// @param maze: The array of nodes of the maze, each short is | 0 | 0 | selected | visited | left | right | up | down |
+void generateTreeUsingBFS(int size, short *maze, MPI_Comm comm){
     // Get the rank and size of the communicator
     int rank, commSize;
     MPI_Comm_rank(comm, &rank);

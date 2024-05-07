@@ -38,7 +38,7 @@ void merge(int x, int y) {
 }
 
 // Generating the Tree using the Kruskal Algorithm
-void generateTreeUsingKruskal(char *maze, int size, MPI_Comm comm) {
+void generateTreeUsingKruskal(int size, short *maze, MPI_Comm comm) {
     int rank, commSize;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &commSize);
@@ -63,24 +63,27 @@ void generateTreeUsingKruskal(char *maze, int size, MPI_Comm comm) {
     //TODO: The above edges vector could probably be somehow replaced by our already exisiting graph sturcture -> the top 8 bits out of the 16 bits represents the "weight" of a node
     
     for (int i = 0; i < n; i++) {
-        if (GET_LEFT(maze[i])) {
-            int weight = std::max(IS_C(maze[i]), IS_C(maze[LEFT_NODE(i, size)])); // The weight of the edge is the maximum of the two nodes connected by the edge
+        int node = maze[i];
+        int neighbour_node;
+        if ((neighbour_node = GET_LEFT(maze[i]))) {
+            int weight = GET_EDGE_WEIGHT(node, neighbour_node);
             edges.emplace_back(i, LEFT_NODE(i, size), weight);
         }
-        if (GET_RIGHT(maze[i])) {
-            int weight = std::max(IS_C(maze[i]), IS_C(maze[RIGHT_NODE(i, size)]));
+        if ((neighbour_node = GET_RIGHT(maze[i]))) {
+            int weight = GET_EDGE_WEIGHT(node, neighbour_node);
             edges.emplace_back(i, RIGHT_NODE(i, size), weight);
         }
-        if (GET_UP(maze[i])) {
-            int weight = std::max(IS_C(maze[i]), IS_C(maze[UP_NODE(i, size)]));
+        if ((neighbour_node = GET_UP(maze[i]))) {
+            int weight =  GET_EDGE_WEIGHT(node, neighbour_node);
             edges.emplace_back(i, UP_NODE(i, size), weight);
         }
-        if (GET_DOWN(maze[i])) {
-            int weight = std::max(IS_C(maze[i]), IS_C(maze[DOWN_NODE(i, size)]));
+        if ((neighbour_node = GET_DOWN(maze[i]))) {
+            int weight =  GET_EDGE_WEIGHT(node, neighbour_node);
             edges.emplace_back(i, DOWN_NODE(i, size), weight);
         }
     }
 
+    //? The below code could be optimized parallelly
     // Sort edges by weight
     std::sort(edges.begin(), edges.end(), [](const auto &a, const auto &b) {
         return std::get<2>(a) < std::get<2>(b);
@@ -124,28 +127,45 @@ void generateTreeUsingKruskal(char *maze, int size, MPI_Comm comm) {
     }
 
     // Gather MST nodes from all processes
-    int *mstNodeBuffer = nullptr;
-    int mstNodeCount;
-    MPI_Gather(&mstNodes.size(), 1, MPI_INT, MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, 0, comm);
+    std::vector<int> localMstNodes(mstNodes.begin(), mstNodes.end());
+    int localMstNodesSize = localMstNodes.size();
+
+    // Gather the sizes of localMstNodes from all processes
+    std::vector<int> mstNodesSizes(commSize);
+    MPI_Gather(&localMstNodesSize, 1, MPI_INT, mstNodesSizes.data(), 1, MPI_INT, 0, comm);
+
+    // Compute the total size of mstNodes
+    int totalMstNodesSize = 0;
     if (rank == 0) {
-        mstNodeCount = 0;
-        for (int i = 0; i < commSize; i++) {
-            int tmp;
-            MPI_Gather(&mstNodes.size(), 1, MPI_INT, &tmp, 1, MPI_INT, i, comm);
-            mstNodeCount += tmp;
+        for (int size : mstNodesSizes) {
+            totalMstNodesSize += size;
         }
-        mstNodeBuffer = new int[mstNodeCount];
     }
 
-    std::vector<int> localMstNodes(mstNodes.begin(), mstNodes.end());
-    MPI_Gatherv(localMstNodes.data(), localMstNodes.size(), MPI_INT, mstNodeBuffer, nullptr, nullptr, MPI_INT, 0, comm);
+    // Broadcast the total size to all processes
+    MPI_Bcast(&totalMstNodesSize, 1, MPI_INT, 0, comm);
 
-    // Update the maze with MST nodes
+    // Resize the localMstNodes vector to the total size and gather the data
+    std::vector<int> gatheredMstNodes(totalMstNodesSize);
+    int *recvBuffer = gatheredMstNodes.data();
+    int *recvCounts = mstNodesSizes.data();
+    int *displs = new int[commSize];
+    int disp = 0;
+    for (int i = 0; i < commSize; i++) {
+        displs[i] = disp;
+        disp += recvCounts[i];
+    }
+
+    MPI_Gatherv(localMstNodes.data(), localMstNodesSize, MPI_INT,
+                recvBuffer, recvCounts, displs, MPI_INT, 0, comm);
+
+    delete[] displs;
+
+    // Update the maze with the MST nodes (rank 0)
     if (rank == 0) {
-        for (int i = 0; i < mstNodeCount; i++) {
-            SET_C(maze[mstNodeBuffer[i]]);
+        for (int node : gatheredMstNodes) {
+            SET_NODE_WEIGHT(maze[node], 1); // Set the weight of MST nodes to 1
         }
-        delete[] mstNodeBuffer;
     }
 
     if (rank != 0) {

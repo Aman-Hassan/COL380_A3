@@ -5,8 +5,17 @@
 // - We make macros to access row no. and col no., neighbors, etc.
 // - make sure that the neighbors macros give valid output, i.e. they don't go out of bounds
 // - Also need a check whether a node is valid or not
-// - We can store edges as 64x64 1d array of char (8bit) where last 4 bits value representing whether node is connected to left/right/down/up neighbors
-// | 0 | 0 | C/W | visited | left | right | up | down | -> 8 bits
+// - We can store edges as 64x64 1d array of short (16bit) where:
+//   - last 4 bits value representing whether node is connected to left/right/down/up neighbors
+//   - 5th bit representing whether the node is visited or not
+//   - 6th bit representing whether the node is C or W
+//   - 7th bit representing whether the node is in path or not (for solving the maze) denoted by P
+//   - the top 8 bits representing the weight of the node
+// | 0 | P | C/W | visited | left | right | up | down | -> bottom 8 bits
+// |                       Weight                     | -> top 8 bits (NOTE: Needed only in kruskal and dijkstra, not in bfs or dfs)
+// Now weight of an edge would thus be defined as the maximum of the two nodes connected by the edge
+
+// Define macros to access the row and column of the node
 #define ROW(node, n) (node / n)
 #define COL(node, n) (node % n)
 #define NODE(row, col, n) (n*row + col)
@@ -14,6 +23,15 @@
 #define RIGHT_NODE(node, n) (COL(node, n) < n-1 ? node + 1 : -1)
 #define UP_NODE(node, n) (ROW(node, n) > 0 ? node - n : -1)
 #define DOWN_NODE(node, n) (ROW(node, n) < n-1 ? node + n : -1)
+
+// Define macros for accessing the weight of a node
+#define WEIGHT_MASK 0xFF00 // Mask for the top 8 bits (weight)
+#define GET_NODE_WEIGHT(node) ((node & WEIGHT_MASK) >> 8) // Get the weight of the node
+#define SET_NODE_WEIGHT(node, weight) (node = (node & ~WEIGHT_MASK) | ((weight << 8) & WEIGHT_MASK)) // Set the weight of the node
+
+// Define macros for accessing the edge weight
+//! Check if this makes sense
+#define GET_EDGE_WEIGHT(node1, node2) (std::max(GET_NODE_WEIGHT(node1), GET_NODE_WEIGHT(node2))) // The weight of the edge is the maximum of the weights of two nodes connected by the edge
 
 // Define macros which represent position of the edges in the 4-bit value, to directly to & and | operationd
 #define LEFT 0x08
@@ -61,6 +79,16 @@
 #define SET_C(edges) (edges |= 0x20)
 #define SET_W(edges) (edges &= ~0x20)
 
+// Check if node is in path
+#define IS_P(edges) (edges & 0x40)
+
+// Set node as in path
+#define SET_P(edges) (edges |= 0x40)
+
+// Unset node as in path
+#define UNSET_P(edges) (edges &= ~0x40)
+
+// Check if node is valid
 #define IS_VALID_NODE(node, n) (ROW(node, n) >= 0 && ROW(node, n) < n && COL(node, n) >= 0 && COL(node, n) < n)
 
 
@@ -68,10 +96,10 @@
 
 
 // debug.cpp functions
-void print_maze(char* maze, int size);
-void print_edges(char* edges, int size);
-void print_maze_visual(char* edges, int size);
-void print_maze_complete(char* edges, int size);
-void print_visited(char* edges, int size);
+void print_maze(short* maze, int size);
+void print_edges(short* edges, int size);
+void print_maze_visual(short* edges, int size);
+void print_maze_complete(short* edges, int size);
+void print_visited(short* edges, int size);
 
 #endif // DEFS_H
