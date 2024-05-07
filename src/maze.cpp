@@ -5,10 +5,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "generator/mazegenerator.hpp"
-#include "solver/mazesolver.hpp"
-
-#define MAX_ARG_LEN 16
+#include "defs.hpp"
+#include "mazegenerator.hpp"
+#include "mazesolver.hpp"
 
 bool parse_inputs(int argc, char* argv[], char* generation_algorithm, char* solving_algorithm) {
     for (int i = 1; i < argc; ++i) {
@@ -85,7 +84,9 @@ int main(int argc, char* argv[]) {
     //     printf("From rank %d: solving_algorithm: %s\n", my_rank, solving_algorithm);
     // }
 
-
+    // Generate the maze
+    generator_main(64, generation_algorithm, MPI_COMM_WORLD);
+    
     MPI_Finalize();
     return 0;
 }

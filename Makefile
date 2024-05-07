@@ -1,6 +1,6 @@
 CXX = mpic++
 CXXFLAGS = -Wall -Wextra -std=c++17 -O2 -Wno-cast-function-type
-INCLUDES = -I.
+INCLUDES = -I. -I./src/generator -I./src/solver -I./src
 
 # Mention the files involved
 MAZE_SRC = ./src/maze.cpp

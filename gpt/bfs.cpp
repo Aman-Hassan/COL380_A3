@@ -3,6 +3,9 @@
 #include <vector>
 #include <queue>
 #include <set>
+#include <random>
+#include <algorithm>
+
 
 std::vector<std::vector<char>> BFS::generateMaze(int rows, int cols) {
     std::vector<std::vector<char>> maze(rows, std::vector<char>(cols, ' '));
@@ -30,7 +33,9 @@ std::vector<std::vector<char>> BFS::generateMaze(int rows, int cols) {
 
         // Randomize directions
         std::vector<int> directions = {0, 1, 2, 3};
-        std::random_shuffle(directions.begin(), directions.end());
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(directions.begin(), directions.end(), g);
 
         for (int dir : directions) {
             int newX = x, newY = y;
