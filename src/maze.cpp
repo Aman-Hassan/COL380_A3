@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
         if (!parse_inputs(argc, argv, generation_algorithm, solving_algorithm)) {
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        // //print the arguments
+        // //& print the arguments
         // printf("From rank %d: generation_algorithm: %s\n", my_rank, generation_algorithm);
         // printf("From rank %d: solving_algorithm: %s\n", my_rank, solving_algorithm);
     }
@@ -78,11 +78,13 @@ int main(int argc, char* argv[]) {
     MPI_Bcast(generation_algorithm, MAX_ARG_LEN, MPI_CHAR, 0, MPI_COMM_WORLD);
     MPI_Bcast(solving_algorithm, MAX_ARG_LEN, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-    // // for debugging purposes
+    // //& for debugging purposes
     // if (my_rank != 0) {
     //     printf("From rank %d: generation_algorithm: %s\n", my_rank, generation_algorithm);
     //     printf("From rank %d: solving_algorithm: %s\n", my_rank, solving_algorithm);
     // }
+
+    MPI_Barrier(MPI_COMM_WORLD); //? Barrier to make sure all processes have received the arguments -> Is this needed?
 
     // Generate the maze
     generator_main(8, generation_algorithm, MPI_COMM_WORLD);

@@ -67,7 +67,7 @@ void print_edges(char* edges, int size){
     for (int i = 0; i < size; i++){
         for (int j = 0; j < size; j++){
             // print the last 8 bits of the edge
-            printf("%d ", edges[i * size + j] & 0xFF);
+            printf("%x ", edges[i * size + j] & 0xFF);
         }
         printf("\n");
     }
@@ -118,9 +118,10 @@ void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm
     int rank;
     MPI_Comm_rank(comm, &rank);
 
-    char* edges = init_graph((size + 1) / 2); // Generates the initial graph with all neighbours connected (shrinked graph) -> size + 1 for odd sizes
+    int graph_size = (size + 1) / 2; // The size of the graph (i.e. the number of nodes in the graph)
+    char* edges = init_graph(graph_size); // Generates the initial graph with all neighbours connected (shrinked graph) -> size + 1 for odd sizes
     if (strcmp(solving_algorithm, "bfs") == 0){
-        generateMazeUsingBFS(size, edges, comm);
+        generateMazeUsingBFS(graph_size, edges, comm);
     } else if (strcmp(solving_algorithm, "kruskal") == 0){
         // generateMazeUsingKruskal(size, edges, comm);
     }

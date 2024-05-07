@@ -39,7 +39,7 @@
 #define UNSET_ALL(edges) (edges &= 0x00)
 
 // to unset the visited bit
-#define UNSET_VISITED(edges) (edges & ~VISITED)
+#define UNSET_VISITED(edges) (edges &= ~VISITED)
 
 // to get the edges
 #define GET_LEFT(edges) (edges & LEFT)
@@ -49,6 +49,9 @@
 
 // to get the visited bit
 #define GET_VISITED(edges) (edges & VISITED)
+
+// to check if visited is set, returns bool
+#define IS_VISITED(edges) ((edges & VISITED) == VISITED)
 
 // Check if node is C or W
 #define IS_C(edges) (edges & 0x20)
