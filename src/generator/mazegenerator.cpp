@@ -38,7 +38,7 @@ char* init_graph(int size){
     char* edges = (char*)malloc(size * size * sizeof(char));
     //! Initialization possibly wrong - This is also giving all the corner/edge vertices as fully connected (even though they have some neighbours)
     for (int i = 0; i < size * size; i++){
-        edges[i] = 0x0F; // All neighbours connected, no flags set. 0x0F = 00001111
+        edges[i] = 0x00; // No flags are set, (But while doing bfs/kruskal we'll assume fully connected i.e. we wont be using the GET_LEFT, GET_RIGHT, etc. macros)
     }
     return edges;
 }
@@ -50,6 +50,15 @@ char* init_maze(int size){
     }
     return maze;
 
+}
+
+void print_maze(char* maze, int size){
+    for (int i = 0; i < size; i++){
+        for (int j = 0; j < size; j++){
+            printf("%c", maze[i * size + j] == 0x00 ? 'W' : 'C');
+        }
+        printf("\n");
+    }
 }
 
 void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm){
@@ -69,6 +78,49 @@ void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm
     // edges now contain the (min) spanning tree
     // Now we need to convert this to a 64x64 maze
     // We can do this by initializing a 64x64 maze with all walls
+    if (rank == 0){
+        char* maze = init_maze(size);
+        // Now we need to convert the edges to the maze
+        // Every (i, j) in the edges should be converted to (2*i, 2*j) in the maze and should be made as C
+        // if there is a connection between say (i, j) and (i, j+1) then (2*i, 2*j+1) should be made as C 
+        // else if there is a connection between say (i, j) and (i+1, j) then (2*i+1, 2*j) should be made as C
+        // We should also change the corresponding edge bit values in the maze
+        int edges_size = (size + 1) / 2;
+        for (int i = 0; i < edges_size; i++){
+            for (int j = 0; j < edges_size; j++){
+                int node_edges_ind = i * edges_size + j; // index in the edges array
+                int node_maze_ind = 2 * i * size + 2 * j; // index in the maze array
+                maze[node_maze_ind] = edges[node_edges_ind]; // Every edge that was there in spanning tree is also there in the maze
+                SET_C(maze[node_maze_ind]); // Set the C bit in maze array for the node
+                if (GET_RIGHT(edges[node_edges_ind])){
+                    SET_C(maze[node_maze_ind + 1]); // Set the C bit in maze array for the right neighbour
+                }
+                if (GET_DOWN(edges[i * edges_size + j])){
+                    SET_C(maze[node_maze_ind + size]); // Set the C bit in maze array for the down neighbour
+                }
+            }
+        }
 
-    char* maze = init_maze(size);
+        // Now we need to add the last row and column
+        // We can just add the last row and column as walls
+        for (int i = 0; i < size; i++){
+            maze[size * (size - 1) + i] = 0x00; // Last row as walls
+            maze[size * i + size - 1] = 0x00; // Last column as walls
+        }
+
+        // But we need a path from (62, 62) to (63, 63)
+        // We can just make (62, 63) or (63, 62) as C
+        if (maze[size * (size-2) + (size-1)] == 0x00){
+            SET_C(maze[size * (size-2) + (size-1)]);
+        } else {
+            SET_C(maze[size * (size-1) + (size-2)]);
+        }
+
+        SET_C(maze[size * (size-1) + (size-1)]); // The end cell is always C
+
+        print_maze(maze, size);
+        free(maze);
+    }
+    free(edges);
 }
+

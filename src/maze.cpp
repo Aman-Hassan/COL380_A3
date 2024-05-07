@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     // }
 
     // Generate the maze
-    generator_main(64, generation_algorithm, MPI_COMM_WORLD);
+    generator_main(4, generation_algorithm, MPI_COMM_WORLD);
     
     MPI_Finalize();
     return 0;

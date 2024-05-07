@@ -2,6 +2,7 @@
 #include <vector>
 #include <queue>
 #include <set>
+#include <unordered_map>
 #include <random>
 #include <algorithm>
 
@@ -35,9 +36,11 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
 
     std::vector<int> global_frontier;
     
-    // For each thread
-    std::vector<int> local_frontier;
-    std::vector<int> next_local_frontier;
+    // For each process
+    std::vector<int> local_frontier; // current frontier for each process
+    std::vector<int> next_local_frontier; // next frontier for each process
+    // We would also need to maintain a list/vector of neighbour_nodes added (along with with neighbour they are) so that the final maze matrix can be updated before next loop
+    std::unordered_map<int, int> neighbour_nodes_added; // key: neighbour_node, value: node from which it was added
     
     // if rank is 0, add the start node to the frontier
     if (rank == 0){
@@ -70,22 +73,33 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
         }
 
         // For each node in the local frontier, add the neighbors to the next local frontier if they are not visited
+        // Set them as visited for current proc (we dont want to check the nodes again in case they are a neighbour of another node in the local frontier)
         for (int node : local_frontier){
             int neighbour_node;
             // Add the neighbors to the next local frontier if they are not visited
             if ((neighbour_node = LEFT_NODE(node, size)) != -1 && !GET_VISITED(maze[neighbour_node])){
+                SET_VISITED(maze[neighbour_node]);
                 next_local_frontier.push_back(neighbour_node);
+                neighbour_nodes_added[neighbour_node] = node;
             }
             if ((neighbour_node = RIGHT_NODE(node, size)) != -1 && !GET_VISITED(maze[neighbour_node])){
+                SET_VISITED(maze[neighbour_node]); 
                 next_local_frontier.push_back(neighbour_node);
+                neighbour_nodes_added[neighbour_node] = node;
             }
             if ((neighbour_node = UP_NODE(node, size)) != -1 && !GET_VISITED(maze[neighbour_node])){
+                SET_VISITED(maze[neighbour_node]); 
                 next_local_frontier.push_back(neighbour_node);
+                neighbour_nodes_added[neighbour_node] = node;
             }
             if ((neighbour_node = DOWN_NODE(node, size)) != -1 && !GET_VISITED(maze[neighbour_node])){
+                SET_VISITED(maze[neighbour_node]);
                 next_local_frontier.push_back(neighbour_node);
+                neighbour_nodes_added[neighbour_node] = node;
             }
         }
+
+
         
         // // do reduction to merge all the next local frontiers of each proc into the global frontier
         // MPI_Allreduce(next_local_frontier.data(), global_frontier.data(), next_local_frontier.size(), MPI_INT, MPI_SUM, comm);
@@ -93,17 +107,64 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
         // Do reduction to merge all next local frontiers of each proc into the global frontier - do this in proc 0
         // Then shuffle the global frontier, set visited bit and then broadcast
         if (rank == 0){
+            // Make a set instead of vector (to avoid duplicates)
+            std::set <int> global_frontier_temp;
             for (int i = 1; i < commSize; i++){
                 std::vector<int> temp(local_frontier_size);
                 MPI_Recv(temp.data(), local_frontier_size, MPI_INT, i, 0, comm, MPI_STATUS_IGNORE);
-                global_frontier.insert(global_frontier.end(), temp.begin(), temp.end());
+                global_frontier_temp.insert(temp.begin(), temp.end());
+                // global_frontier.insert(global_frontier.end(), temp.begin(), temp.end());
             }
+            // Convert the set to vector
+            global_frontier.assign(global_frontier_temp.begin(), global_frontier_temp.end());
             std::random_shuffle(global_frontier.begin(), global_frontier.end());
             MPI_Bcast(global_frontier.data(), global_frontier.size(), MPI_INT, 0, comm);
         } else {
             MPI_Send(next_local_frontier.data(), next_local_frontier.size(), MPI_INT, 0, 0, comm);
         }
- 
+
+        // Now we need to get the neighbour_nodes_added from all the processes and update the maze for each of them
+        // We can do this by sending the neighbour_nodes_added from each process to process 0 and Broadcasting it to all processes
+        // Then each process can update the maze accordingly
+        // We would probably need to create a new MPI data type for the unordered_map
+        //! CHECK IF THE BELOW PART IS PROPERLY CREATED
+        MPI_Datatype MPI_UNORDERED_MAP;
+        MPI_Type_contiguous(2, MPI_INT, &MPI_UNORDERED_MAP);
+        MPI_Type_commit(&MPI_UNORDERED_MAP);
+        std::unordered_map<int, int> neighbour_nodes_added_global;
+        if (rank == 0){
+            for (int i = 1; i < commSize; i++){
+                std::unordered_map<int, int> temp;
+                MPI_Recv(&temp, 1, MPI_UNORDERED_MAP, i, 0, comm, MPI_STATUS_IGNORE);
+                neighbour_nodes_added_global.insert(temp.begin(), temp.end());
+            }
+            neighbour_nodes_added_global.insert(neighbour_nodes_added.begin(), neighbour_nodes_added.end());
+            MPI_Bcast(&neighbour_nodes_added_global, 1, MPI_UNORDERED_MAP, 0, comm);
+        } else {
+            MPI_Send(&neighbour_nodes_added, 1, MPI_UNORDERED_MAP, 0, 0, comm);
+        }
+
+        // Update the maze for each process
+        for (auto it = neighbour_nodes_added_global.begin(); it != neighbour_nodes_added_global.end(); it++){
+            int neighbour_node = it->first;
+            int node = it->second;
+            if (LEFT_NODE(node, size) == neighbour_node){
+                SET_RIGHT(maze[node]);
+                SET_LEFT(maze[neighbour_node]);
+            } else if (RIGHT_NODE(node, size) == neighbour_node){
+                SET_LEFT(maze[node]);
+                SET_RIGHT(maze[neighbour_node]);
+            } else if (UP_NODE(node, size) == neighbour_node){
+                SET_DOWN(maze[node]);
+                SET_UP(maze[neighbour_node]);
+            } else if (DOWN_NODE(node, size) == neighbour_node){
+                SET_UP(maze[node]);
+                SET_DOWN(maze[neighbour_node]);
+            }
+        }
+
     }
+
+    // The tree has now been generated and is stored in the maze
 
 }

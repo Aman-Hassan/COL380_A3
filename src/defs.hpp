@@ -6,7 +6,7 @@
 // - make sure that the neighbors macros give valid output, i.e. they don't go out of bounds
 // - Also need a check whether a node is valid or not
 // - We can store edges as 64x64 1d array of char (8bit) where last 4 bits value representing whether node is connected to left/right/down/up neighbors
-// | 0 | 0 | 0 | visited | left | right | up | down | -> 8 bits
+// | 0 | 0 | C/W | visited | left | right | up | down | -> 8 bits
 #define ROW(node, n) (node / n)
 #define COL(node, n) (node % n)
 #define NODE(row, col, n) (n*row + col)
@@ -50,6 +50,13 @@
 // to get the visited bit
 #define GET_VISITED(edges) (edges & VISITED)
 
+// Check if node is C or W
+#define IS_C(edges) (edges & 0x20)
+#define IS_W(edges) (!(edges & 0x20))
+
+// Set node as C or W
+#define SET_C(edges) (edges |= 0x20)
+#define SET_W(edges) (edges &= ~0x20)
 
 #define IS_VALID_NODE(node, n) (ROW(node, n) >= 0 && ROW(node, n) < n && COL(node, n) >= 0 && COL(node, n) < n)
 
