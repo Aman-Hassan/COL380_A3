@@ -32,6 +32,6 @@
 *.app
 
 # workspace file
-*.workspace
+*.code-workspace
 .vscode/
 submission/
