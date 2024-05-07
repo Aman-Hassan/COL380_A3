@@ -1,3 +1,3 @@
 #include <mpi.h>
 #include "defs.hpp"
-void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm);
+void generateTreeUsingBFS(int size, char *maze, MPI_Comm comm);

@@ -59,6 +59,7 @@ bool parse_inputs(int argc, char* argv[], char* generation_algorithm, char* solv
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
+    int size = 64;
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
@@ -78,10 +79,8 @@ int main(int argc, char* argv[]) {
     MPI_Barrier(MPI_COMM_WORLD); //? Barrier to make sure all processes have received the arguments -> Is this needed?
 
     // Generate the maze
-    generator_main(32, generation_algorithm, MPI_COMM_WORLD);
+    generator_main(size, generation_algorithm, MPI_COMM_WORLD);
     
-    // Solve the maze
-
     MPI_Finalize();
     return 0;
 }

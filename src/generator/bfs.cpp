@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <cstddef>
 #include "bfs.hpp"
+#include <chrono>
+#include <thread>
 
 // - Nodes of the maze are represented by an integer, 64*row + col
 // - We make macros to access row no. and col no., neighbors, etc.
@@ -19,7 +21,7 @@
 // Function to generate a maze using BFS and MPI
 // @param size: The size of the maze
 // @param maze: The array of nodes of the maze, each char is | 0 | 0 | selected | visited | left | right | up | down |
-void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
+void generateTreeUsingBFS(int size, char *maze, MPI_Comm comm){
     // Get the rank and size of the communicator
     int rank, commSize;
     MPI_Comm_rank(comm, &rank);
@@ -63,9 +65,14 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
 
     while (true){
 
-        if (rank == 0)
-            print_maze_visual(maze, size);
-
+        // printing the tree generated step by step
+        // if (rank == 0){
+        //     print_maze_visual(maze, size);
+        //     printf("\n");
+        //     // put a delay of 0.5s
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        // }
+        
         // If the global frontier is empty, break
         if (global_frontier.size() == 0){
             break;

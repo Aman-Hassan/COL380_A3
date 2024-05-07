@@ -92,6 +92,23 @@ void expand_edges_to_maze(int size, char* edges, char* maze){
 
     SET_C(maze[size * (size-1) + (size-1)]); // The end cell is always C
 
+    // Optionally add more complexity by adding alternate C and W cells in the last row and column
+    // for last row
+    for (int i = 0; i < size - 2; i++){
+        if (i % 2 == 0){
+            SET_C(maze[size * (size - 1) + i]);
+        }
+    }
+
+    // for last column
+    for (int i = 0; i < size - 2; i++){
+        if (i % 2 == 0){
+            SET_C(maze[size * i + size - 1]);
+        }
+    }
+
+
+
 }
 
 void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm){
@@ -101,9 +118,9 @@ void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm
     int graph_size = (size + 1) / 2; // The size of the graph (i.e. the number of nodes in the graph)
     char* edges = init_graph(graph_size); // Generates the initial graph with all neighbours connected (shrinked graph) -> size + 1 for odd sizes
     if (strcmp(solving_algorithm, "bfs") == 0){
-        generateMazeUsingBFS(graph_size, edges, comm);
+        generateTreeUsingBFS(graph_size, edges, comm);
     } else if (strcmp(solving_algorithm, "kruskal") == 0){
-        // generateMazeUsingKruskal(size, edges, comm);
+        // generateTreeUsingKruskal(size, edges, comm);
     }
     else {
         printf("Invalid solving algorithm\n");
@@ -120,6 +137,7 @@ void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm
         ! Need to check bfs and do the necessary changes
         */
         expand_edges_to_maze(size, edges, maze);
+        // printing the final obtained maze
         print_maze_complete(maze, size);
         free(maze);
     }
