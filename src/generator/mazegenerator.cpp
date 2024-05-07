@@ -114,13 +114,13 @@ void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm
     // We can do this by initializing a 64x64 maze with all walls
     if (rank == 0){
         char* maze = init_maze(size);
-        print_edges(edges, (size + 1) / 2); // For debugging purposes
+        // print_edges(edges, (size + 1) / 2); // For debugging purposes
         /*
         ! Upon printing edges it seems that the bits are not set correctly and hence error in the maze
         ! Need to check bfs and do the necessary changes
         */
         expand_edges_to_maze(size, edges, maze);
-        print_maze(maze, size);
+        print_maze_complete(maze, size);
         free(maze);
     }
     free(edges);
