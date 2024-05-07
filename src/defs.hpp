@@ -67,5 +67,10 @@
 #define MAX_ARG_LEN 16
 
 
+// debug.cpp functions
+void print_maze(char* maze, int size);
+void print_edges(char* edges, int size);
+void print_maze_visual(char* edges, int size);
+void print_visited(char* edges, int size);
 
 #endif // DEFS_H

@@ -11,8 +11,9 @@ GENERATOR = ./src/generator/mazegenerator.cpp
 SOLVER_DFS = ./src/solver/dfs.cpp
 SOLVER_DIJKSTRA = ./src/solver/dijkstra.cpp
 SOLVER = ./src/solver/mazesolver.cpp
+EXTRAS = ./src/debug.cpp
 
-SRC = $(MAZE_SRC) $(GENERATOR_KRUSKAL) $(GENERATOR_BFS) $(GENERATOR) $(SOLVER_DFS) $(SOLVER_DIJKSTRA) $(SOLVER)
+SRC = $(MAZE_SRC) $(GENERATOR_KRUSKAL) $(GENERATOR_BFS) $(GENERATOR) $(SOLVER_DFS) $(SOLVER_DIJKSTRA) $(SOLVER) $(EXTRAS)
 
 # Output file
 OUT = maze.out

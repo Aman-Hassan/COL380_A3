@@ -85,6 +85,7 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
 
         // Clear the next local frontier
         local_frontier.clear();
+        next_local_frontier.clear();
 
         // Split the global frontier into local frontiers per proc
         int local_frontier_size = global_frontier.size() / commSize + (rank < global_frontier.size() % commSize ? 1 : 0);
@@ -94,16 +95,26 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
 
         // For each node in the local frontier, add the neighbors to the next local frontier if they are not visited
         // Set them as visited for current proc (we dont want to check the nodes again in case they are a neighbour of another node in the local frontier)
+        
+        // printing visited before local frontier update
+        if (rank == 0){
+            printf("Matrix BEFORE update of LOCAL FRONTIER, rank: %d, loop: %d\n", rank, loop_iter);
+            print_maze_visual(maze, size);
+            print_visited(maze, size);
+        }
         for (int node : local_frontier) {
             //printf("Rank: %d, Loop: %d, Node: %d\n", rank, loop_iter, node);
 
             int neighbour_node;
             // Add the neighbors to the next local frontier if they are not visited
             if ((neighbour_node = LEFT_NODE(node, size)) != -1 && !IS_VISITED(maze[neighbour_node])) {
+                // print is visited
+                // printf() IS_VISITED(maze[neighbour_node])
+                printf("IS_VISITED(maze[neighbour_node]): %d\n", IS_VISITED(maze[neighbour_node]));
                 next_local_frontier.push_back(neighbour_node);
                 neighbour_nodes_added[neighbour_node] = node;
                 //print the neigbour node bits before update
-                printf("not visited yet");
+                printf("left node not visited yet");
                 printf("Rank: %d, Loop: %d, Node: %d, Neighbour: %d, Neighbour bits: %x\n", rank, loop_iter, node, neighbour_node, maze[neighbour_node] & 0xFF);
                 SET_VISITED(maze[neighbour_node]);
                 // print the neighbour node bits after update
@@ -111,21 +122,26 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
                 
             }
             if ((neighbour_node = RIGHT_NODE(node, size)) != -1 && !IS_VISITED(maze[neighbour_node])) {
+                printf("IS_VISITED(maze[neighbour_node]): %d\n", IS_VISITED(maze[neighbour_node]));
                 next_local_frontier.push_back(neighbour_node);
                 neighbour_nodes_added[neighbour_node] = node;
                 SET_VISITED(maze[neighbour_node]);
             }
             if ((neighbour_node = UP_NODE(node, size)) != -1 && !IS_VISITED(maze[neighbour_node])) {
+                printf("IS_VISITED(maze[neighbour_node]): %d\n", IS_VISITED(maze[neighbour_node]));
                 next_local_frontier.push_back(neighbour_node);
                 neighbour_nodes_added[neighbour_node] = node;
                 SET_VISITED(maze[neighbour_node]);
             }
             if ((neighbour_node = DOWN_NODE(node, size)) != -1 && !IS_VISITED(maze[neighbour_node])) {
+                printf("IS_VISITED(maze[neighbour_node]): %d\n", IS_VISITED(maze[neighbour_node]));
                 next_local_frontier.push_back(neighbour_node);
                 neighbour_nodes_added[neighbour_node] = node;
                 SET_VISITED(maze[neighbour_node]);
             }
         }
+        // print size of next local frontier
+        printf("Rank: %d, Loop: %d, next_local_frontier size: %d\n", rank, loop_iter, next_local_frontier.size());
 
 
         // Clear the global frontier
@@ -174,6 +190,9 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
 
         MPI_Bcast(&global_frontier_size, 1, MPI_INT, 0, comm);
 
+        // MPI sync
+        MPI_Barrier(comm);
+
         // Resize the global_frontier vector on non-root processes
         if (rank != 0) {
             global_frontier.resize(global_frontier_size);
@@ -216,9 +235,20 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
 
         if (rank == 0) {
             std::set<Pair> neighbour_nodes_added_global;
+            std::set<int> neighbour_nodes_seen;
 
-            // Insert the neighbour_nodes of proc 0
-            neighbour_nodes_added_global.insert(neighbour_nodes.begin(), neighbour_nodes.end());
+            // Before inserting to global, check if the neighbour_nodes are already seen
+            // do that by checking if the first element of the pair is already in the set
+            for (auto it = neighbour_nodes.begin(); it != neighbour_nodes.end(); it++) {
+                if (neighbour_nodes_seen.find(it->first) == neighbour_nodes_seen.end()) {
+                    neighbour_nodes_added_global.insert(*it);
+                    neighbour_nodes_seen.insert(it->first);
+                }
+            }
+            // // Insert the neighbour_nodes of proc 0
+            // neighbour_nodes_added_global.insert(neighbour_nodes.begin(), neighbour_nodes.end());
+            // // insert into nodes seen the first element of all pairs
+            // neighbour_nodes_seen.insert(neighbour_nodes.begin(), neighbour_nodes.end());
 
             // Receive the neighbour_nodes of other processes and insert them into the set
             for (int i = 1; i < commSize; i++) {
@@ -226,7 +256,15 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
                 MPI_Recv(&temp_size, 1, MPI_INT, i, 0, comm, MPI_STATUS_IGNORE);
                 std::vector<Pair> temp(temp_size);
                 MPI_Recv(temp.data(), temp_size, MPI_PAIR, i, 0, comm, MPI_STATUS_IGNORE);
-                neighbour_nodes_added_global.insert(temp.begin(), temp.end());
+                // similar to before, check if the first element of the pair is already in the set
+                for (auto it = temp.begin(); it != temp.end(); it++) {
+                    if (neighbour_nodes_seen.find(it->first) == neighbour_nodes_seen.end()) {
+                        neighbour_nodes_added_global.insert(*it);
+                        neighbour_nodes_seen.insert(it->first);
+                    }
+                }
+
+                // neighbour_nodes_added_global.insert(temp.begin(), temp.end());
             }
 
             // Convert the set to vector
@@ -258,13 +296,9 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
         
         // before edges update
         if (rank == 0){
-            printf("Matrix before update of edges:\n");
-            for (int i = 0; i < size; i++){
-                for (int j = 0; j < size; j++){
-                    printf("%x ", maze[i * size + j] & 0xFF);
-                }
-                printf("\n");
-            }
+            printf("Matrix BEFORE update of edges, rank: %d, loop: %d\n", rank, loop_iter);
+            print_maze_visual(maze, size);
+            print_visited(maze, size);
 
         }
 
@@ -273,31 +307,32 @@ void generateMazeUsingBFS(int size, char *maze, MPI_Comm comm){
             int neighbour_node = it->first;
             int node = it->second;
             if (LEFT_NODE(node, size) == neighbour_node){
-                SET_RIGHT(maze[node]);
-                SET_LEFT(maze[neighbour_node]);
-            } else if (RIGHT_NODE(node, size) == neighbour_node){
+                // if the left of node is neighbour_node
                 SET_LEFT(maze[node]);
                 SET_RIGHT(maze[neighbour_node]);
+            } else if (RIGHT_NODE(node, size) == neighbour_node){
+                SET_RIGHT(maze[node]);
+                SET_LEFT(maze[neighbour_node]);
             } else if (UP_NODE(node, size) == neighbour_node){
-                SET_DOWN(maze[node]);
-                SET_UP(maze[neighbour_node]);
-            } else if (DOWN_NODE(node, size) == neighbour_node){
                 SET_UP(maze[node]);
                 SET_DOWN(maze[neighbour_node]);
+            } else if (DOWN_NODE(node, size) == neighbour_node){
+                SET_DOWN(maze[node]);
+                SET_UP(maze[neighbour_node]);
             }
         }
 
         // print maze for proc 0 
         if (rank == 0){
-            printf("Printing maze after update\n");
-            for (int i = 0; i < size; i++){
-                for (int j = 0; j < size; j++){
-                    printf("%x ", maze[i * size + j] & 0xFF);
-                }
-                printf("\n");
-            }
+            printf("Matrix AFTER update of edges, rank: %d, loop: %d\n", rank, loop_iter);
+            print_maze_visual(maze, size);
+            print_visited(maze, size);
         }
 
+        loop_iter++;
+        
+        // if (loop_iter >= 10)
+        //     break;
     }
 
     // The tree has now been generated and is stored in the maze

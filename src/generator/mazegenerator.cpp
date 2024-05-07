@@ -52,26 +52,6 @@ char* init_maze(int size){
 
 }
 
-void print_maze(char* maze, int size){
-    printf("Printing maze\n");
-    for (int i = 0; i < size; i++){
-        for (int j = 0; j < size; j++){
-            printf("%c", maze[i * size + j] == 0x00 ? 'W' : 'C');
-        }
-        printf("\n");
-    }
-}
-
-void print_edges(char* edges, int size){
-    printf("Printing edges\n");
-    for (int i = 0; i < size; i++){
-        for (int j = 0; j < size; j++){
-            // print the last 8 bits of the edge
-            printf("%x ", edges[i * size + j] & 0xFF);
-        }
-        printf("\n");
-    }
-}
 
 void expand_edges_to_maze(int size, char* edges, char* maze){
     // Now we need to convert the edges to the maze
