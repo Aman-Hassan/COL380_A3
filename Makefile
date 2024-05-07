@@ -1,5 +1,6 @@
 CXX = mpic++
-CXXFLAGS = -Wall -Wextra -std=c++17 -O2 -Wno-cast-function-type
+# Ignore the cast warnings of mpi and the unused parameter warning
+CXXFLAGS = -Wall -Wextra -std=c++17 -O2 -Wno-cast-function-type -Wno-unused-parameter
 INCLUDES = -I. -I./src/generator -I./src/solver -I./src
 
 # Mention the files involved
