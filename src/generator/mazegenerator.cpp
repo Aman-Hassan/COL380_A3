@@ -49,16 +49,16 @@ short* init_graph(int size){
 }
 
 // Initialize the maze with all walls
-short* init_maze(int size){
+void init_maze(int size, short* maze){
     // create random weight for node
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(1, 255); // since we have 8 bits for weight
-    short* maze = (short*)malloc(size * size * sizeof(short));
+    // short* maze = (short*)malloc(size * size * sizeof(short));
     for (int i = 0; i < size * size; i++){
         maze[i] = 0x00; // All walls (i.e. no connections at all)
     }
-    return maze;
+    // return maze;
 
 }
 
@@ -120,7 +120,7 @@ void expand_edges_to_maze(int size, short* edges, short* maze){
     }
 }
 
-void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm){
+short* generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm){
     int rank;
     MPI_Comm_rank(comm, &rank);
 
@@ -148,14 +148,21 @@ void generator_main(int size, char solving_algorithm[MAX_ARG_LEN], MPI_Comm comm
     // edges now contain the (min) spanning tree
     // Now we need to convert this to a 64x64 maze
     // We can do this by initializing a 64x64 maze with all walls
+    // short* maze = (short*)malloc(size * size * sizeof(short));
+    short* const maze = new short[size * size];
     if (rank == 0){
-        short* maze = init_maze(size);
+        init_maze(size, maze);
         // print_edges(edges, (size + 1) / 2); // For debugging purposes
         expand_edges_to_maze(size, edges, maze);
         // printing the final obtained maze
-        print_maze_complete(maze, size);
-        free(maze);
-    }
-    free(edges);
+        // print_maze_complete(maze, size);
+        // free(maze);
+    } 
+    // Broadcast the maze to all processes
+    // printf("Rank %d\n", rank);
+    MPI_Bcast(maze, size * size, MPI_SHORT, 0, comm);
+    // printf("Rank %d\n", rank);
+
+    return maze;
 }
 

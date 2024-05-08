@@ -69,8 +69,6 @@ void generateTreeUsingBFS(int size, short *maze, MPI_Comm comm){
         // if (rank == 0){
         //     print_maze_visual(maze, size);
         //     printf("\n");
-        //     // put a delay of 0.5s
-        //     std::this_thread::sleep_for(std::chrono::milliseconds(500));
         // }
         
         // If the global frontier is empty, break

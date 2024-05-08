@@ -1,2 +1,2 @@
 #include <mpi.h>
-void solveUsingDijkstra(int size, char* edges, MPI_Comm comm);
+void solveUsingDijkstra(int size, short* maze, MPI_Comm comm, int start, int end);

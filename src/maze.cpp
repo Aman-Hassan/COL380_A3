@@ -56,10 +56,37 @@ bool parse_inputs(int argc, char* argv[], char* generation_algorithm, char* solv
     return true;
 }
 
+void print_maze_final(short* edges, int size, int start, int end){
+    for (int i = 0; i < size; i++){
+        for (int j = 0; j < size; j++){
+            int node = NODE(i, j, size);
+            if (IS_W(edges[node])){
+                // a) * for wall cells in the maze,
+                printf("*");
+            } else if (node == start){
+                // (d) S for the entry cell
+                printf("S");
+            } else if (node == end){
+                // (e) E for the exit cell
+                printf("E");
+            } else if (IS_P(edges[node])){
+                // (c) P for non-wall cells in the maze in solution path,
+                printf("P");
+            } else if (IS_C(edges[node])){
+                // (b) space for non-wall cells in the maze not in solution path,
+                printf(" ");
+            } else {
+                printf("?");
+            }
+        }
+        printf("\n");
+    }
+}
+
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
-    int size = 4;
+    int size = 64;
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
@@ -78,8 +105,23 @@ int main(int argc, char* argv[]) {
 
     MPI_Barrier(MPI_COMM_WORLD); //? Barrier to make sure all processes have received the arguments -> Is this needed?
 
+    int start = NODE(0, size-1, size);
+    int end = NODE(size-1, 0, size);
+
     // Generate the maze
-    generator_main(size, generation_algorithm, MPI_COMM_WORLD);
+    short* maze = generator_main(size, generation_algorithm, MPI_COMM_WORLD);
+    // printf("Maze generated\n");
+    // if (my_rank == 0)
+        // print_maze_complete(maze, size);
+    solver_main(size, maze, solving_algorithm, MPI_COMM_WORLD, start, end);
+    // printf("Maze solved\n");
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if (my_rank == 0)
+        print_maze_final(maze, size, start, end);
+
+    free(maze);
     
     MPI_Finalize();
     return 0;

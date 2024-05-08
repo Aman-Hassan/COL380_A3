@@ -18,7 +18,7 @@
 // Define macros to access the row and column of the node
 #define ROW(node, n) (node / n)
 #define COL(node, n) (node % n)
-#define NODE(row, col, n) (n*row + col)
+#define NODE(row, col, n) ((n)*(row) + (col))
 #define LEFT_NODE(node, n) (COL(node, n) > 0 ? node - 1 : -1)
 #define RIGHT_NODE(node, n) (COL(node, n) < n-1 ? node + 1 : -1)
 #define UP_NODE(node, n) (ROW(node, n) > 0 ? node - n : -1)
@@ -41,6 +41,9 @@
 
 // Define macros for visited
 #define VISITED 0x10
+#define UNWALLED 0x20
+#define PATH 0x40
+#define VISITED_SOLVE 0x80
 
 // To set the bits
 #define SET_LEFT(edges) (edges |= LEFT)
@@ -48,6 +51,7 @@
 #define SET_UP(edges) (edges |= UP)
 #define SET_DOWN(edges) (edges |= DOWN)
 #define SET_VISITED(edges) (edges |= VISITED)
+#define SET_VISITED_SOLVE(edges) (edges |= VISITED_SOLVE)
 
 // to unset the bits
 #define UNSET_LEFT(edges) (edges &= ~LEFT)
@@ -70,8 +74,10 @@
 
 // to check if visited is set, returns bool
 #define IS_VISITED(edges) ((edges & VISITED) == VISITED)
+#define IS_VISITED_SOLVE(edges) ((edges & VISITED_SOLVE) == VISITED_SOLVE)
 
 // Check if node is C or W
+// C - Connected, W - Wall
 #define IS_C(edges) (edges & 0x20)
 #define IS_W(edges) (!(edges & 0x20))
 
@@ -101,5 +107,10 @@ void print_edges(short* edges, int size);
 void print_maze_visual(short* edges, int size);
 void print_maze_complete(short* edges, int size);
 void print_visited(short* edges, int size);
+void print_visited_solve(short* edges, int size);
+
+// maze.cpp functions
+
+void print_maze_final(short* edges, int size, int start, int end);
 
 #endif // DEFS_H

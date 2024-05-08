@@ -69,7 +69,7 @@ void print_maze_complete(short* edges, int size) {
             int node = NODE(i, j, size);
             short edge = edges[node];
 
-            if (IS_C(edge) != 0x20) {
+            if (IS_W(edge)) {
                 printf("█"); // Print a character to represent an opaque block
             } else {
                 int left_node = LEFT_NODE(node, size);
@@ -177,4 +177,64 @@ void print_visited(short* edges, int size){
         }
         printf("\n");
     }
+}
+
+
+void print_visited_solve(short* edges, int size) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            int node = NODE(i, j, size);
+            short edge = edges[node];
+
+            if (IS_W(edge)) {
+                printf("█"); // Print a character to represent an opaque block
+            } else {
+                int left_node = LEFT_NODE(node, size);
+                int right_node = RIGHT_NODE(node, size);
+                int up_node = UP_NODE(node, size);
+                int down_node = DOWN_NODE(node, size);
+
+                int has_left = (left_node != -1 && IS_VISITED_SOLVE(edges[left_node]));
+                int has_right = (right_node != -1 && IS_VISITED_SOLVE(edges[right_node]));
+                int has_up = (up_node != -1 && IS_VISITED_SOLVE(edges[up_node]));
+                int has_down = (down_node != -1 && IS_VISITED_SOLVE(edges[down_node]));
+
+                if (has_left && has_right && has_up && has_down) {
+                    printf("┼");
+                } else if (has_left && has_right && has_up) {
+                    printf("┴");
+                } else if (has_left && has_right && has_down) {
+                    printf("┬");
+                } else if (has_left && has_up && has_down) {
+                    printf("┤");
+                } else if (has_right && has_up && has_down) {
+                    printf("├");
+                } else if (has_left && has_right) {
+                    printf("─");
+                } else if (has_up && has_down) {
+                    printf("│");
+                } else if (has_left && has_up) {
+                    printf("┘");
+                } else if (has_left && has_down) {
+                    printf("┐");
+                } else if (has_right && has_up) {
+                    printf("└");
+                } else if (has_right && has_down) {
+                    printf("┌");
+                } else if (has_left) {
+                    printf("╴");
+                } else if (has_right) {
+                    printf("╶");
+                } else if (has_up) {
+                    printf("╵");
+                } else if (has_down) {
+                    printf("╷");
+                } else {
+                    printf("·");
+                }
+            }
+        }
+        printf("\n");
+    }
+    printf("\n");
 }
