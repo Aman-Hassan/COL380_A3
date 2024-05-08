@@ -59,7 +59,7 @@ bool parse_inputs(int argc, char* argv[], char* generation_algorithm, char* solv
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
-    int size = 64;
+    int size = 4;
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
