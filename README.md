@@ -17,14 +17,7 @@ Maze creation &amp; solving using MPI
         - Note that this idea is basically like idea 1 in that it generates a random connected graph (just that now all edges have non-zero weight) and it is like idea 2 in that all neighbours are connected
 - The graph should thus be generated in mazegenerator.cpp which would then call bfs.cpp or kruskal.cpp (depending on the command line arguments) and generate the required min-spanning tree using that algo
 
-### 1.1 Generating the min-spanning tree
-
-
-
-
-# Todo
-
-## 1. Data structures
+## 2. Data structures
 
 - Nodes of the maze are represented by an integer, 64*row + col
 - We make macros to access row no. and col no., neighbors, etc.
