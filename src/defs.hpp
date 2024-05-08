@@ -11,7 +11,7 @@
 //   - 6th bit representing whether the node is C or W
 //   - 7th bit representing whether the node is in path or not (for solving the maze) denoted by P
 //   - the top 8 bits representing the weight of the node
-// | 0 | P | C/W | visited | left | right | up | down | -> bottom 8 bits
+// | visited_by_solver | P | C/W | visited | left | right | up | down | -> bottom 8 bits
 // |                       Weight                     | -> top 8 bits (NOTE: Needed only in kruskal and dijkstra, not in bfs or dfs)
 // Now weight of an edge would thus be defined as the maximum of the two nodes connected by the edge
 
